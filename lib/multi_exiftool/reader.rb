@@ -1,60 +1,42 @@
 # coding: utf-8
 require_relative 'executable'
+require_relative 'execute_as_daemon'
+
 require 'json'
 
 module MultiExiftool
+  DAEMON_ROLES = [ExecuteAsDaemon]
+  NORMAL_ROLES = [Execute]
+  COMMON_ROLES = [Options, Sanitizing]
 
   # Handle reading of metadata via exiftool.
   # Composing the command for the command-line executing it and parsing
   # the results as well as possible errors.
   class Reader
-
-    MANDATORY_ARGS = %w(-J)
-
-    attr_accessor :tags, :group
-
-    include Executable
-
-    # Options to use with the exiftool command.
-    def options
-      opts = super
-      if @group
-        opts["g#{@group}"] = true
+    class << self
+      def as_daemon
+        new DAEMON_ROLES
       end
-      opts
     end
 
-    # Getting the command for the command-line which would be executed
-    # when calling #read. It could be useful for logging, debugging or
-    # maybe even for creating a batch-file with exiftool command to be
-    # processed.
-    def command
-      cmd = [exiftool_command]
-      cmd << MANDATORY_ARGS
-      cmd << options_args
-      cmd << tags_args
-      cmd << escaped_filenames
-      cmd.flatten.join(' ')
+    COMMON_ROLES.each do |role|
+      include role
     end
 
-    alias read execute # :nodoc:
+    attr_accessor :exiftool_command, :errors, :numerical, :tags, :group
+    attr_writer :options, :filenames
 
-    private
-
-    def tags_args
-      return [] unless @tags
-      @tags.map {|tag| "-#{tag}"}
+    def initialize roles=[Execute], opts={}
+      @exiftool_command = 'exiftool'
+      @options = opts
+      roles.each do |role|
+        self.extend role
+      end
     end
 
-    def parse_results
-      stdout = @stdout.read
-      @errors = @stderr.readlines
-      json = JSON.parse(stdout)
-      json.map {|values| Values.new(values)}
-    rescue JSON::ParserError
-      return []
+    def filenames
+      Array(@filenames)
     end
-
   end
-
 end
+

@@ -5,7 +5,7 @@ require_relative 'multi_exiftool/writer'
 
 module MultiExiftool
 
-  class Error < ::StandardError; end
+  OperationsError = Class.new(StandardError)
 
 end
 
