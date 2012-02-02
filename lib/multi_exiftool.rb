@@ -1,5 +1,7 @@
 # coding: utf-8
 require_relative 'multi_exiftool/values'
+require_relative 'multi_exiftool/options'
+require_relative 'multi_exiftool/sanitizing'
 require_relative 'multi_exiftool/reader'
 require_relative 'multi_exiftool/writer'
 

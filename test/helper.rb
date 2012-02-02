@@ -1,7 +1,7 @@
 # coding: utf-8
 require_relative '../lib/multi_exiftool'
-require 'test/unit'
-require 'contest'
+require 'minitest/spec'
+require 'minitest/autorun'
 require 'open3'
 require 'stringio'
 
@@ -22,6 +22,6 @@ module TestHelper
 
 end
 
-class Test::Unit::TestCase
+class MiniTest::Spec
   include TestHelper
 end

@@ -1,87 +1,87 @@
 # coding: utf-8
 require_relative 'helper'
 
-class TestReader < Test::Unit::TestCase
+describe "MultiExiftool::Reader" do
 
-  setup do
+  before do
     @reader = MultiExiftool::Reader.new
   end
 
-  context 'command method' do
+  describe 'command method' do
 
-    test 'simple case' do
+    it 'simple case' do
       @reader.filenames = %w(a.jpg b.tif c.bmp)
-      command = 'exiftool -J a.jpg b.tif c.bmp'
-      assert_equal command, @reader.command
+      command = 'exiftool -j a.jpg b.tif c.bmp'
+      @reader.command.must_equal command
     end
 
-    test 'no filenames' do
-      assert_raises MultiExiftool::Error do
+    it 'no filenames' do
+      assert_raises MultiExiftool::OperationsError do
         @reader.command
       end
       @reader.filenames = []
-      assert_raises MultiExiftool::Error do
+      assert_raises MultiExiftool::OperationsError do
         @reader.command
       end
     end
 
-    test 'filenames with spaces' do
+    it 'filenames with spaces' do
       @reader.filenames = ['one file with spaces.jpg', 'another file with spaces.tif']
-      command = 'exiftool -J one\ file\ with\ spaces.jpg another\ file\ with\ spaces.tif'
-      assert_equal command, @reader.command
+      command = 'exiftool -j one\ file\ with\ spaces.jpg another\ file\ with\ spaces.tif'
+      @reader.command.must_equal command
     end
 
-    test 'tags' do
+    it 'tags' do
       @reader.filenames = %w(a.jpg b.tif c.bmp)
       @reader.tags = %w(author fnumber)
-      command = 'exiftool -J -author -fnumber a.jpg b.tif c.bmp'
-      assert_equal command, @reader.command
+      command = 'exiftool -j -author -fnumber a.jpg b.tif c.bmp'
+      @reader.command.must_equal command
     end
 
-    test 'options with boolean argument' do
+    it 'options with boolean argument' do
       @reader.filenames = %w(a.jpg b.tif c.bmp)
       @reader.options = {:e => true}
-      command = 'exiftool -J -e a.jpg b.tif c.bmp'
-      assert_equal command, @reader.command
+      command = 'exiftool -j -e a.jpg b.tif c.bmp'
+      @reader.command.must_equal command
     end
 
-    test 'options with value argument' do
+    it 'options with value argument' do
       @reader.filenames = %w(a.jpg b.tif c.bmp)
       @reader.options = {:lang => 'de'}
-      command = 'exiftool -J -lang de a.jpg b.tif c.bmp'
-      assert_equal command, @reader.command
+      command = 'exiftool -j -lang de a.jpg b.tif c.bmp'
+      @reader.command.must_equal command
     end
 
-    test 'numerical flag' do
+    it 'numerical flag' do
       @reader.filenames = %w(a.jpg b.tif c.bmp)
       @reader.numerical = true
-      command = 'exiftool -J -n a.jpg b.tif c.bmp'
-      assert_equal command, @reader.command
+      command = 'exiftool -j -n a.jpg b.tif c.bmp'
+      @reader.command.must_equal command
     end
 
-    test 'group flag' do
+    it 'group flag' do
       @reader.filenames = %w(a.jpg)
       @reader.group = 0
-      command = 'exiftool -J -g0 a.jpg'
-      assert_equal command, @reader.command
+      command = 'exiftool -j -g0 a.jpg'
+      @reader.command.must_equal command
       @reader.group = 1
-      command = 'exiftool -J -g1 a.jpg'
-      assert_equal command, @reader.command
+      command = 'exiftool -j -g1 a.jpg'
+      @reader.command.must_equal command
     end
 
   end
 
-  context 'read method' do
+  describe 'read method' do
 
-    test 'try to read a non-existing file' do
-      mocking_open3('exiftool -J non_existing_file', '', 'File non_existing_file not found.')
+    it 'try to read a non-existing file' do
+      mocking_open3('exiftool -j non_existing_file', '', 'File non_existing_file not found.')
       @reader.filenames = %w(non_existing_file)
       res = @reader.read
-      assert_equal [], res
-      assert_equal ['File non_existing_file not found.'], @reader.errors
+      res.must_equal []
+      @reader.errors.must_equal ['File non_existing_file not found.']
     end
 
-    test 'successful reading with one tag' do
+    it 'successful reading with one tag' do
       json = <<-EOS
         [{
           "SourceFile": "a.jpg",
@@ -97,16 +97,17 @@ class TestReader < Test::Unit::TestCase
         }]
       EOS
       json.gsub!(/^ {8}/, '')
-      mocking_open3('exiftool -J -fnumber a.jpg b.tif c.bmp', json, '')
+      mocking_open3('exiftool -j -fnumber a.jpg b.tif c.bmp', json, '')
       @reader.filenames = %w(a.jpg b.tif c.bmp)
       @reader.tags = %w(fnumber)
       res =  @reader.read
-      assert_kind_of Array, res
-      assert_equal [11.0, 9.0, 8.0], res.map {|e| e['FNumber']}
-      assert_equal [], @reader.errors
+
+      res.must_be_kind_of Array
+      res.map {|e| e['FNumber']}.must_equal [11.0, 9.0, 8.0]
+      @reader.errors.must_equal []
     end
 
-    test 'successful reading of hierarichal data' do
+    it 'successful reading of hierarichal data' do
       json = <<-EOS
         [{
           "SourceFile": "a.jpg",
@@ -119,15 +120,16 @@ class TestReader < Test::Unit::TestCase
         }]
       EOS
       json.gsub!(/^ {8}/, '')
-      mocking_open3('exiftool -J -g0 -fnumber a.jpg', json, '')
+      mocking_open3('exiftool -j -g0 -fnumber a.jpg', json, '')
       @reader.filenames = %w(a.jpg)
       @reader.tags = %w(fnumber)
       @reader.group = 0
       res =  @reader.read.first
-      assert_equal 'a.jpg', res.source_file
-      assert_equal 7.1, res.exif.fnumber
-      assert_equal 7.0, res.maker_notes.fnumber
-      assert_equal [], @reader.errors
+      
+      res.source_file.must_equal 'a.jpg'
+      res.exif.fnumber.must_equal 7.1
+      res.maker_notes.fnumber.must_equal 7.0
+      @reader.errors.must_equal []
     end
 
   end

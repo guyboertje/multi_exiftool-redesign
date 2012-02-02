@@ -1,13 +1,13 @@
 # coding: utf-8
 require_relative 'executable'
-require_relative 'execute_as_daemon'
+require_relative 'daemon_executable'
 
 require 'json'
 
 module MultiExiftool
-  DAEMON_ROLES = [ExecuteAsDaemon]
-  NORMAL_ROLES = [Execute]
-  COMMON_ROLES = [Options, Sanitizing]
+  DAEMON_ROLES = [MultiExiftool::DaemonExecutable]
+  NORMAL_ROLES = [MultiExiftool::Executable]
+  COMMON_ROLES = [MultiExiftool::Options, MultiExiftool::Sanitizing]
 
   # Handle reading of metadata via exiftool.
   # Composing the command for the command-line executing it and parsing
@@ -17,6 +17,10 @@ module MultiExiftool
       def as_daemon
         new DAEMON_ROLES
       end
+
+      def name
+        "Reader"
+      end
     end
 
     COMMON_ROLES.each do |role|
@@ -24,10 +28,10 @@ module MultiExiftool
     end
 
     attr_accessor :exiftool_command, :errors, :numerical, :tags, :group
-    attr_writer :options, :filenames
+    attr_writer   :options, :filenames
 
-    def initialize roles=[Execute], opts={}
-      @exiftool_command = 'exiftool'
+    def initialize roles=NORMAL_ROLES, opts={}
+      @exiftool_command = 'exiftool -j'
       @options = opts
       roles.each do |role|
         self.extend role

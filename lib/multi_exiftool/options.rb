@@ -1,13 +1,12 @@
 # coding: utf-8
 module MultiExiftool
-
-  MANDATORY_ARGS = ['-j']
   
   module Options
     def options
       opts = @options.dup
       opts["g#{@group}"] = true if @group
       opts[:n] = true if @numerical
+      opts[:overwrite_original] = true if @overwrite_original
       opts
     end
 

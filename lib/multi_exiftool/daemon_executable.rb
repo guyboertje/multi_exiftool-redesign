@@ -1,11 +1,14 @@
 # coding: utf-8
 require 'open3'
-require 'shellwords'
 
 module MultiExiftool
 
   # Mixin for Reader and Writer.
-  module Executable
+  module DaemonExecutable
+
+    def self.extended other
+      puts "class extended by #{other}"  
+    end
 
     def execute # :nodoc:
       prepare_execution
@@ -13,6 +16,10 @@ module MultiExiftool
       parse_results
     end
     
+    def extended other
+      puts "instance extended by #{other}"  
+    end
+
     alias read execute
     alias write execute
 
