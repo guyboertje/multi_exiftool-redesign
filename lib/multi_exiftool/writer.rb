@@ -7,40 +7,23 @@ module MultiExiftool
   # Composing the command for the command-line executing it and parsing
   # possible errors.
   class Writer
+    class << self
+      include InstanceRoleExtender
+
+      def name
+        "Writer"
+      end
+    end
+
+    COMMON_ROLES.each do |role|
+      include role
+    end
 
     attr_accessor :overwrite_original
-    attr_writer :values
-
-    include Executable
+    attr_writer   :values
 
     def values
       Array(@values)
-    end
-
-    # Getting the command for the command-line which would be executed
-    # when calling #write. It could be useful for logging, debugging or
-    # maybe even for creating a batch-file with exiftool command to be
-    # processed.
-    def command
-      cmd = [exiftool_command]
-      cmd << options_args
-      cmd << values_args
-      cmd << escaped_filenames
-      cmd.flatten.join(' ')
-    end
-
-    alias write execute # :nodoc:
-
-    private
-
-    def values_args
-      raise MultiExiftool::Error.new('No values.') if values.empty?
-      @values.map {|tag, val| "-#{tag}=#{escape(val.to_s)}"}
-    end
-
-    def parse_results
-      @errors = @stderr.readlines
-      @errors.empty?
     end
 
   end

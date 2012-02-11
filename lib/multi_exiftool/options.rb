@@ -26,5 +26,10 @@ module MultiExiftool
       return [] unless @tags
       @tags.map {|tag| "-#{tag}"}
     end
+
+    def values_args
+      raise MultiExiftool::OperationsError.new('No values.') if values.empty?
+      @values.map {|tag, val| "-#{tag}=#{escape(val.to_s)}"}
+    end
   end
 end

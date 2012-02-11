@@ -25,3 +25,11 @@ end
 class MiniTest::Spec
   include TestHelper
 end
+
+require "awesome_print"
+
+def apr what, banner = ''
+  ap "--- #{banner} ---"
+  ap what
+  ap "-"*(banner.size + 8)
+end

@@ -6,39 +6,49 @@ module MultiExiftool
   # Mixin for Reader and Writer.
   module Executable
 
-    def self.extended other
-      if other.class.name == "Reader"
-        alias read execute
-      end
-      if other.class.name == "Writer"
-        alias write execute
-      end
-    end
-
-    def execute # :nodoc:
-      prepare_execution
-      execute_command
-      parse_results
-    end
-
-    def command
-      cmd = [exiftool_command]
+    def reader_command
+      cmd = [reader_exiftool_command]
       cmd << options_args
       cmd << tags_args
       cmd << escaped_filenames
       cmd.flatten.join(' ')
     end
 
-    private
-    
-    def prepare_execution
-      @errors = []
+    def writer_command
+      cmd = [writer_exiftool_command]
+      cmd << options_args
+      cmd << values_args
+      cmd << escaped_filenames
+      cmd.flatten.join(' ')
     end
+
+    def reader_exiftool_command
+      'exiftool -j'
+    end
+
+    def writer_exiftool_command
+      'exiftool'
+    end
+
+    private
 
     def execute_command
       stdin, @stdout, @stderr = Open3.popen3(command)
     end
 
+    def parse_writer_results
+      @errors = @stderr.readlines
+      @errors.empty?
+    end
+
+    def parse_reader_results
+      stdout = @stdout.read
+      @errors = @stderr.readlines
+      json = JSON.parse(stdout)
+      json.map {|values| Values.parsed(values)}
+    rescue JSON::ParserError
+      return []
+    end
   end
 
 end
