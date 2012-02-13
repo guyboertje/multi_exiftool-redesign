@@ -4,44 +4,51 @@ module MultiExiftool
   # Mixin for Reader and Writer.
   module DaemonExecutable
 
+    def included other
+      puts "instance included"
+    end
+
     def reader_command
-      cmd = [reader_exiftool_command]
+      cmd = reader_exiftool_command
       cmd << options_args
       cmd << tags_args
       cmd << escaped_filenames
-      cmd.flatten.join(' ')
+      cmd.flatten.join(10.chr)
     end
 
     def writer_command
-      cmd = [writer_exiftool_command]
+      cmd = writer_exiftool_command
       cmd << options_args
       cmd << values_args
       cmd << escaped_filenames
-      cmd.flatten.join(' ')
+      cmd.flatten.join(10.chr)
     end
 
     def reader_exiftool_command
-      'exiftool -j'
+      ["-j"]
     end
 
     def writer_exiftool_command
-      'exiftool'
+      []
     end
 
     private
 
     def execute_command
-      stdin, @stdout, @stderr = Open3.popen3(command)
+      unless @daemon
+        @daemon = MultiExiftool::DaemonProcess.open
+      end
+      @daemon.write command
     end
 
     def parse_writer_results
-      @errors = @stderr.readlines
+      @errors = @daemon.errors
       @errors.empty?
     end
 
     def parse_reader_results
-      stdout = @stdout.read
-      @errors = @stderr.readlines
+      stdout = @daemon.read
+      @errors = @daemon.errors
       json = JSON.parse(stdout)
       json.map {|values| Values.parsed(values)}
     rescue JSON::ParserError

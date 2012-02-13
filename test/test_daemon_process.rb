@@ -5,7 +5,8 @@ require 'json'
 describe "MultiExiftool::DaemonProcess" do
 
   before do
-    @process = MultiExiftool::DaemonProcess.open
+    @process = MultiExiftool::DaemonProcess.instance
+    @process.open
   end
 
   after do
@@ -46,23 +47,17 @@ describe "MultiExiftool::DaemonProcess" do
 
   end
 
-  describe "reading a resource" do
+  describe "reading a good file" do
+
+    let(:file)  { File.expand_path('./resources/id3v22-test.mp3') }
 
     it "reads metadata from a file" do
 
-      @process.write(['-j', File.expand_path('./resources/id3v22-test.mp3')])
-
-      assert @process.ready_to_read?
-
-      meta = @process.read
+      (meta = @process.write(['-j', file]).read).wont_be_empty
       
       @process.errors.must_be_empty
       
-      meta.wont_be_empty
-
-      parsed_meta = JSON.parse(meta)
-
-      parsed_meta.must_be_instance_of Array
+      (parsed_meta = JSON.parse(meta)).must_be_instance_of Array
 
       meta_hash = parsed_meta.first
 
@@ -75,4 +70,41 @@ describe "MultiExiftool::DaemonProcess" do
     end
 
   end
+
+  describe "reading a bad file" do
+
+    let(:file)  { File.expand_path('./resources/empty.mp3') }
+
+    it "has an error key in the json" do
+
+      (meta = @process.write(['-j', file]).read).wont_be_empty
+      
+      @process.errors.must_be_empty
+      
+      (parsed_meta = JSON.parse(meta)).must_be_instance_of Array
+
+      meta_hash = parsed_meta.first
+
+      meta_hash["Error"].must_equal "File format error"
+
+    end
+
+  end
+
+  describe "reading a non-existant file" do
+
+    let(:file)  { './resources/empty1.mp3' }
+
+    it "has an error key in the json" do
+
+      meta = @process.write(['-j', file]).read
+ 
+      @process.errors.must_be_empty
+
+      meta.must_equal ""
+      
+    end
+
+  end
+
 end
